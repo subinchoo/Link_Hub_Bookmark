@@ -1,0 +1,16 @@
+# Ignore dependency folders
+node_modules/
+.vscode/
+bin/
+obj/
+dist/
+build/
+.env
+.DS_Store
+
+# Ignore Blazor and ASP.NET build artifacts
+wwwroot/
+*.dll
+*.pdb
+*.exe
+*.db

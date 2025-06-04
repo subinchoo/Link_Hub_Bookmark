@@ -1,0 +1,24 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+
+<!-- Show different UI depending on authentication state -->
+<AuthorizeView>
+    <Authorized>
+        <!-- Display greeting and logout button when user is logged in -->
+        <span class="me-2 text-info fs-5">Hello, @context.User.Identity.Name!</span>
+        <button class="btn btn-lg btn-outline-danger ms-2" style="font-weight:600;" @onclick="Logout">Logout</button>
+    </Authorized>
+    <NotAuthorized>
+        <!-- Show register and login buttons when user is not logged in -->
+        <a class="btn btn-lg btn-outline-primary me-2" style="font-weight:600;" href="/Identity/Account/Register">Register</a>
+        <a class="btn btn-lg btn-outline-secondary" style="font-weight:600;" href="/Identity/Account/Login">Login</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    // Logout function: navigates to the logout Razor Page (safe from CSRF)
+    void Logout()
+    {
+        Navigation.NavigateTo("/Identity/Account/Logout", forceLoad: true);
+    }
+}

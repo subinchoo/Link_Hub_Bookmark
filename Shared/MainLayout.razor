@@ -1,0 +1,24 @@
+﻿@inherits LayoutComponentBase
+
+<!-- Set the page title -->
+<PageTitle>LinkHub</PageTitle>
+
+<div class="page">
+    <!-- Sidebar navigation menu -->
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <!-- Top row: authentication display and About link -->
+        <div class="top-row px-4 auth">
+            <LoginDisplay />
+            
+        </div>
+
+        <!-- Main content area where routed pages are rendered -->
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

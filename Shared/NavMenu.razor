@@ -1,0 +1,83 @@
+﻿@inject AuthenticationStateProvider AuthStateProvider
+@inject ApplicationDbContext DbContext
+@using LinkHub.Data;
+
+<!-- Top navigation bar with brand and menu toggle button -->
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">LinkHub</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<!-- Sidebar navigation menu, collapsible on small screens -->
+<div class="@NavMenuCssClass nav-scrollable">
+    <nav class="flex-column">
+        <!-- Home navigation link -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <!-- Render categorized user links if loaded -->
+        @if (isLoaded && categorizedLinks.Any())
+        {
+            @foreach (var group in categorizedLinks)
+            {
+                <!-- Category header -->
+                <div class="mt-2 px-3 fw-bold text-muted">@group.Key</div>
+                @foreach (var link in group)
+                {
+                    <!-- User link under category -->
+                    <div class="nav-item px-3 user-link">
+                        <a class="nav-link" href="@link.Url" target="_blank">@link.Title</a>
+                    </div>
+                }
+            }
+        }
+    </nav>
+</div>
+
+@code {
+    // Controls whether the navigation menu is collapsed or expanded
+    private bool collapseNavMenu = true;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+
+    // Current logged-in user ID
+    private string currentUserId = "";
+    // Indicates if links are loaded
+    private bool isLoaded = false;
+
+    // Lookup for categorized links (category => links)
+    private ILookup<string, LinkItem> categorizedLinks = Enumerable.Empty<LinkItem>()
+        .ToLookup(x => x.Category);
+
+    // On first render, load user links from DB and categorize them
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated ?? false)
+            {
+                currentUserId = user.Identity?.Name ?? "";
+
+                // Load all links for the current user and group by category
+                var linkList = DbContext.LinkItems
+                    .Where(x => x.UserId == currentUserId)
+                    .ToList(); 
+
+                categorizedLinks = linkList.ToLookup(x => x.Category);
+            }
+
+            isLoaded = true;
+            StateHasChanged(); 
+        }
+    }
+}

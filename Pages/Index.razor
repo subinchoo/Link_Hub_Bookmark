@@ -1,0 +1,134 @@
+﻿@page "/"
+@using LinkHub.Models
+@inject AuthenticationStateProvider AuthStateProvider
+@using LinkHub.Data
+@inject ApplicationDbContext DbContext
+@using Microsoft.EntityFrameworkCore
+
+<!--
+    Glance Bookmark main page
+    - Add bookmarks, add categories, search/filter, and display link list
+-->
+
+<h3>Glance Bookmark</h3>
+
+<!-- Input form: Add a new bookmark -->
+<div class="mb-3">
+    <input placeholder="Title" class="form-control" @bind="newTitle" />
+    <input placeholder="Link(URL)" class="form-control mt-2" @bind="newUrl" />
+
+    <!-- Category dropdown -->
+    <select class="form-select mt-2" @bind="selectedCategory">
+        @foreach (var cat in categories)
+        {
+            <option>@cat</option>
+        }
+    </select>
+
+    <button class="btn btn-primary mt-2" @onclick="AddLink">Add</button>
+</div>
+
+<!-- Add new category form -->
+<div class="mt-3">
+    <input class="form-control" placeholder="Add Category" @bind="newCategory" />
+    <button class="btn btn-secondary mt-1" @onclick="AddCategory">Add Category</button>
+</div>
+
+<!-- Search/filter component: filter by keyword and category -->
+<SearchAndFilter 
+    @bind-SearchKeyword="searchKeyword" 
+    @bind-FilterCategory="filterCategory"
+    Categories="categories" />
+
+<!-- Link list component: shows filtered bookmarks -->
+<LinkList 
+    Links="links" 
+    Categories="categories" 
+    SearchKeyword=@searchKeyword
+    FilterCategory=@filterCategory
+    CurrentUserId=@currentUserId
+    OnDelete=@(link => RemoveLink(link)) />
+
+@code {
+    // List of all bookmarks for the current user
+    List<LinkItem> links = new();
+
+    // Input form binding variables
+    string newTitle = "";
+    string newUrl = "";
+    string selectedCategory = "Development";
+    string newCategory = "";
+
+    // Search/filter variables
+    string searchKeyword = "";
+    string filterCategory = "All";
+
+    // Current logged-in user ID
+    string currentUserId = "anonymous";
+
+    // On page initialization: get logged-in user info & load user's saved links
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // If user is authenticated, set currentUserId
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            currentUserId = user.Identity.Name;
+        }
+
+        // Load bookmarks for the current user from the database
+        links = await DbContext.LinkItems
+            .Where(l => l.UserId == currentUserId)
+            .ToListAsync();
+    }
+
+    // Initial category list
+    List<string> categories = new() { "Development", "Design", "General", "IT School", "Recruitment", "Other" };
+
+    // Add a new bookmark and save to database
+    async Task AddLink()
+    {
+        Console.WriteLine($"AddLink() called by: {currentUserId}");
+
+        // Only add if title and URL are not empty
+        if (!string.IsNullOrWhiteSpace(newTitle) && !string.IsNullOrWhiteSpace(newUrl))
+        {
+            var link = new LinkItem
+            {
+                Title = newTitle,
+                Url = newUrl,
+                Category = selectedCategory,
+                UserId = currentUserId
+            };
+
+            // Save to database
+            DbContext.LinkItems.Add(link);
+            await DbContext.SaveChangesAsync();
+
+            // Add to in-memory list and clear input fields
+            links.Add(link);
+            newTitle = "";
+            newUrl = "";
+        }
+    }
+
+    // Add a new category to the list
+    void AddCategory()
+    {
+        if (!string.IsNullOrWhiteSpace(newCategory) && !categories.Contains(newCategory))
+        {
+            categories.Add(newCategory);
+            newCategory = "";
+        }
+    }
+
+    // Remove a bookmark (from list and DB)
+    async Task RemoveLink(LinkItem link)
+    {
+        links.Remove(link);
+        DbContext.LinkItems.Remove(link);
+        await DbContext.SaveChangesAsync();
+    }
+}

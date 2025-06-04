@@ -1,0 +1,51 @@
+@* Show filtered link list by category, user, and search keyword *@
+@using LinkHub.Models
+
+@* Loop through all categories *@
+@foreach (var cat in Categories)
+{
+    // If a filter is applied and this category doesn't match, skip it
+    if (FilterCategory != "All" && cat != FilterCategory)
+    {
+        continue;
+    }
+
+    // Filter links by category, user, and search keyword
+    var filtered = Links
+        .Where(l => l.Category == cat &&
+                    l.UserId == CurrentUserId &&
+                    (string.IsNullOrWhiteSpace(SearchKeyword) || l.Title.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+
+    // If there are any links in this category, display them
+    if (filtered.Any())
+    {
+        <h5 class="mt-4">@cat</h5>
+        <ul class="list-group">
+            @foreach (var link in filtered)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <!-- Link title (opens in new tab) -->
+                    <a href="@link.Url" target="_blank">@link.Title</a>
+                    <!-- Delete button for this link -->
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDelete.InvokeAsync(link)">Delete</button>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    // List of all links to display
+    [Parameter] public List<LinkItem> Links { get; set; } = new();
+    // List of all categories
+    [Parameter] public List<string> Categories { get; set; } = new();
+    // Current search keyword for filtering
+    [Parameter] public string SearchKeyword { get; set; } = "";
+    // Current selected category for filtering
+    [Parameter] public string FilterCategory { get; set; } = "All";
+    // Current logged-in user ID
+    [Parameter] public string CurrentUserId { get; set; } = "";
+    // Event callback for deleting a link
+    [Parameter] public EventCallback<LinkItem> OnDelete { get; set; }
+}
